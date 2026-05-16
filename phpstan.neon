@@ -1,0 +1,8 @@
+parameters:
+  level: 5
+  paths:
+    - src
+    - tropikal-connect-wordpress.php
+  scanFiles:
+    - stubs/wordpress.php
+
