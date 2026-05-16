@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<ruleset name="TROPIKAL Connect WordPress">
+  <description>Static style checks for the TROPIKAL Connect WordPress plugin.</description>
+  <file>src</file>
+  <file>tests</file>
+  <file>tropikal-connect-wordpress.php</file>
+  <arg name="extensions" value="php"/>
+  <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+  <rule ref="PSR12"/>
+</ruleset>

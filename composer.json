@@ -1,0 +1,45 @@
+{
+  "name": "tropikal-ai/connect-wordpress",
+  "type": "wordpress-plugin",
+  "description": "TROPIKAL Connect integration for WordPress.",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Tropikal AI"
+    }
+  ],
+  "require": {
+    "php": "^8.2",
+    "tropikal-ai/connect": "^0.1"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^11.0|^12.0",
+    "squizlabs/php_codesniffer": "^3.9",
+    "wp-coding-standards/wpcs": "^3.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tropikal\\Connect\\WordPress\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tropikal\\Connect\\WordPress\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "analyse": "phpstan analyse --memory-limit=1G",
+    "build": "php scripts/build-zip.php",
+    "lint": "phpcs -n",
+    "test": "phpunit --colors=never"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
