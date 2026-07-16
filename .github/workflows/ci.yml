@@ -8,10 +8,9 @@ on:
       - "feat/**"
   workflow_dispatch:
 
-# Never run two CI builds for the same branch/PR at once; a new push
-# supersedes the in-flight run.
+# A new push supersedes the in-flight run for the same branch/PR.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 # Least privilege: CI only reads the checkout.
@@ -19,48 +18,18 @@ permissions:
   contents: read
 
 jobs:
+  # The shared Connect-family quality gate (single source of CI truth).
+  # TODO(after tropikal-ai/connect#4 merges): flip the pin to
+  # tropikal-ai/connect/.github/workflows/php-quality.yml@<sha or tag>.
   quality:
-    name: PHP ${{ matrix.php }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['8.2', '8.3', '8.4']
-    steps:
-      - uses: actions/checkout@v4
+    uses: realbotbob/connect/.github/workflows/php-quality.yml@e149bb948fbf140c9c5a1d918e452d3917001489
+    with:
+      coverage: xdebug
+      style: composer lint
+      test: vendor/bin/phpunit --colors=never --coverage-text
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          extensions: json, mbstring, openssl, sodium
-          coverage: xdebug
-          tools: composer:v2
-
-      - name: Validate composer.json
-        run: composer validate --strict
-
-      - name: Install dependencies (cached)
-        uses: ramsey/composer-install@v3
-
-      - name: Syntax check (php -l)
-        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 -P4 php -l
-
-      - name: Security audit (composer audit)
-        run: composer audit
-
-      - name: Coding standard (PHPCS)
-        run: composer lint
-
-      - name: Static analysis (PHPStan)
-        run: composer analyse
-
-      - name: Tests (PHPUnit + coverage)
-        run: vendor/bin/phpunit --colors=never --coverage-text
-
-  # Single stable check that branch protection requires. It fails if any
-  # matrix job failed or was cancelled, so "CI green" == the whole gate passed.
+  # Single stable check for branch protection: "CI green" fails when any
+  # quality job failed, was cancelled, or was skipped.
   ci:
     name: CI green
     if: always()
