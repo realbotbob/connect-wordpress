@@ -155,7 +155,8 @@ final readonly class BridgeExecutor
     {
         $grant = match ($operation) {
             'wordpress.resource.list', 'wordpress.resource.search', 'wordpress.resource.get', 'wordpress.media.get' => 'read',
-            'wordpress.resource.create', 'wordpress.resource.update', 'wordpress.resource.draft_write', 'wordpress.resource.publish_approved', 'wordpress.media.upload' => 'write',
+            'wordpress.resource.create', 'wordpress.resource.draft_write', 'wordpress.media.upload' => 'create',
+            'wordpress.resource.update', 'wordpress.resource.publish_approved' => 'update',
             'wordpress.resource.delete', 'wordpress.media.delete' => 'delete',
             default => throw new UnsupportedOperationException(),
         };

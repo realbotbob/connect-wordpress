@@ -204,8 +204,8 @@ function wp_trash_post(int $post_id): object|false|null { return $GLOBALS['wp_po
 function is_wp_error(mixed $thing): bool { return $thing instanceof WP_Error; }
 function get_attached_file(int $attachment_id, bool $unfiltered = false): string|false { unset($unfiltered); return "/tmp/{$attachment_id}.jpg"; }
 function wp_get_attachment_url(int $attachment_id): string|false { return "https://example.com/uploads/{$attachment_id}.jpg"; }
-function get_post_meta(int $post_id, string $key = '', bool $single = false): mixed { unset($post_id, $key, $single); return ''; }
-function update_post_meta(int $post_id, string $meta_key, mixed $meta_value, mixed $prev_value = ''): int|bool { unset($post_id, $meta_key, $meta_value, $prev_value); return 1; }
+function get_post_meta(int $post_id, string $key = '', bool $single = false): mixed { unset($single); return $GLOBALS['wp_post_meta'][$post_id][$key] ?? ''; }
+function update_post_meta(int $post_id, string $meta_key, mixed $meta_value, mixed $prev_value = ''): int|bool { unset($prev_value); $GLOBALS['wp_post_meta'][$post_id][$meta_key] = $meta_value; return 1; }
 function get_allowed_mime_types(?int $user = null): array { unset($user); return ['jpg|jpeg' => 'image/jpeg', 'png' => 'image/png']; }
 function wp_upload_bits(string $name, ?string $deprecated, string $bits, ?string $time = null): array { unset($deprecated, $bits, $time); return ['file' => '/tmp/' . $name, 'url' => 'https://example.com/uploads/' . $name, 'error' => false]; }
 function wp_insert_attachment(array $args, string|false $file = false, int $parent_post_id = 0, bool $wp_error = false, bool $fire_after_hooks = true): int|WP_Error { unset($args, $file, $parent_post_id, $wp_error, $fire_after_hooks); return ++$GLOBALS['wp_next_id']; }
@@ -215,3 +215,5 @@ function wp_remote_retrieve_body(array|WP_Error $response): string { return is_a
 function wp_parse_url(string $url, int $component = -1): mixed { return parse_url($url, $component); }
 function apply_filters(string $hook_name, mixed $value, mixed ...$args): mixed { unset($hook_name, $args); return $value; }
 function dbDelta(string|array $queries = '', bool $execute = true): array { unset($queries, $execute); return []; }
+function wp_redirect(string $location, int $status = 302, string $x_redirect_by = 'WordPress'): bool { unset($location, $status, $x_redirect_by); return true; }
+function get_registered_meta_keys(string $object_type = 'post', string $object_subtype = ''): array { return $GLOBALS['wp_registered_meta'][$object_subtype] ?? ($GLOBALS['wp_registered_meta']['*'] ?? []); }

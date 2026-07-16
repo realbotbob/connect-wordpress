@@ -10,7 +10,7 @@ final readonly class GrantRepository
 {
     private const OPTION = 'enabled_grants';
 
-    private const GRANTS = ['read', 'write', 'delete'];
+    private const GRANTS = ['read', 'create', 'update', 'delete'];
 
     public function __construct(private OptionsRepository $options)
     {
@@ -46,7 +46,7 @@ final readonly class GrantRepository
     public function set(string $resourceKey, string $grant, bool $enabled): void
     {
         if (! in_array($grant, self::GRANTS, true)) {
-            throw new \InvalidArgumentException('Grant must be read, write, or delete.');
+            throw new \InvalidArgumentException('Grant must be read, create, update, or delete.');
         }
 
         SensitiveData::assertPublicKey($resourceKey);

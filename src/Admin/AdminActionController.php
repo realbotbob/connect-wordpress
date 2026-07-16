@@ -6,7 +6,7 @@ namespace Tropikal\Connect\WordPress\Admin;
 
 use Tropikal\Connect\WordPress\Discovery\BusinessObjectDiscoveryService;
 use Tropikal\Connect\WordPress\Security\PermissionGate;
-use Tropikal\Connect\WordPress\Setup\RegistrationService;
+use Tropikal\Connect\WordPress\Setup\ConnectFlow;
 use Tropikal\Connect\WordPress\Storage\AuditLogRepository;
 use Tropikal\Connect\WordPress\Storage\GrantRepository;
 
@@ -17,7 +17,7 @@ final readonly class AdminActionController
         private Notices $notices,
         private GrantRepository $grants,
         private BusinessObjectDiscoveryService $discovery,
-        private RegistrationService $registration,
+        private ConnectFlow $flow,
         private AuditLogRepository $audit,
     ) {
     }
@@ -34,10 +34,8 @@ final readonly class AdminActionController
         try {
             match ($action) {
                 'save_grants' => $this->saveGrants(),
-                'connect' => $this->registration->register((string) get_current_user_id()),
-                'sync' => $this->registration->syncManifest(),
-                'rotate' => $this->registration->rotateSecret(),
-                'disconnect' => $this->registration->revoke(),
+                'sync' => $this->flow->sync(),
+                'disconnect' => $this->flow->disconnect(),
                 default => throw new \InvalidArgumentException('Unknown TROPIKAL Connect action.'),
             };
 
@@ -59,7 +57,7 @@ final readonly class AdminActionController
         foreach ($objects as $key => $object) {
             $resource = is_array($posted[$key] ?? null) ? $posted[$key] : [];
             $enabled = [];
-            foreach (['read', 'write', 'delete'] as $grant) {
+            foreach (['read', 'create', 'update', 'delete'] as $grant) {
                 if (! empty($resource[$grant])) {
                     $enabled[] = $grant;
                 }

@@ -1,4 +1,5 @@
 /vendor/
+/composer.lock
 /dist/
 /build/
 /.phpunit.cache/

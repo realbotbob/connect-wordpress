@@ -19,7 +19,8 @@ final readonly class SignatureVerifier
     }
 
     /**
-     * @param array<string, mixed> $headers
+     * @param array<string, mixed>|string|null $query
+     * @param array<string, mixed>             $headers
      */
     public function verify(string $method, string $path, array|string|null $query, string $body, array $headers): void
     {

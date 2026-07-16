@@ -16,9 +16,8 @@ protection, and audit logging.
 - PHP 8.2 or newer
 - WordPress 6.x
 - Composer for source installs
-- `tropikal-ai/connect` 0.1
-- WordPress salts or `TROPIKAL_CONNECT_ENCRYPTION_KEY` for local secret
-  encryption
+- `tropikal-ai/connect` 0.1 (OAuth 2.1 + signed-request primitives)
+- `TROPIKAL_CONNECT_ENCRYPTION_KEY` or WordPress salts for encryption at rest
 
 ## Installation
 
@@ -56,18 +55,55 @@ dependencies. Generated ZIPs are not committed.
 
 1. Open `Settings -> TROPIKAL Connect`.
 2. Confirm the site identity.
-3. Click **Connect**.
-4. Approve Read, Write, or Delete for each WordPress business object.
-5. Click **Sync Connected Data**.
+3. Click **Connect to TROPIKAL**. You are redirected to the TROPIKAL
+   authorization server to approve the connection, then returned to the
+   settings page.
+4. Approve Read, Create, Update, or Delete for each WordPress business object.
+5. Click **Sync Connected Data** to push the updated capability manifest.
 
 Default access is none. Empty grants expose nothing.
 
-The registration endpoint is intentionally injectable through WordPress filters
-so this package does not hardcode deployment-specific URLs:
+### One-click connect (OAuth 2.1 + PKCE)
+
+**Connect** runs the standard authorization-code flow with PKCE (`S256`), the
+same as the Filament and n2n adapters — no secrets are typed into WordPress:
+
+1. If no client is configured, the plugin performs **dynamic client
+   registration** against the authorization server.
+2. It generates a PKCE verifier and a single-use hashed `state`, persists them
+   encrypted, and redirects the admin to the authorization server.
+3. On callback it validates `state`, expiry, and the exact redirect URI, then
+   **exchanges the code for tokens** (never exposing the verifier).
+4. It registers the installation on the TROPIKAL control plane using the access
+   token as a Bearer credential and sends the capability manifest.
+5. The control plane returns the **server signing key**, which is encrypted at
+   rest and used to verify inbound bridge calls.
+
+**Fail-closed:** the connection is stored only when the control plane returns
+both a server signing key and an installation ID. There is no
+locally-generated secret fallback. The refresh token is stored encrypted so
+**Sync** can obtain a fresh access token and re-push the manifest without a new
+authorization round-trip.
+
+### Configuration
+
+Defaults target the TROPIKAL production endpoints. Override them with constants
+in `wp-config.php` (e.g. to point at a local mock authorization server) —
 
 ```php
-add_filter('tropikal_connect_wordpress_registration_url', fn () => 'https://example.com/connect/register');
-add_filter('tropikal_connect_wordpress_manifest_sync_url', fn () => 'https://example.com/connect/manifest');
+define('TROPIKAL_CONNECT_AUTH_SERVER_URL', 'https://id.example.test');
+define('TROPIKAL_CONNECT_CONTROL_PLANE_URL', 'https://app.example.test');
+define('TROPIKAL_CONNECT_SCOPES', 'connect.install');
+```
+
+— or programmatically via the `tropikal_connect_wordpress_config` filter, which
+receives and returns a `ConnectConfig` value object:
+
+```php
+add_filter('tropikal_connect_wordpress_config', function (ConnectConfig $config): ConnectConfig {
+    // return a customized ConnectConfig (endpoints, scopes, seeded grants, ...)
+    return $config;
+});
 ```
 
 ## Connected Data
@@ -79,18 +115,36 @@ The plugin discovers safe WordPress business objects from WordPress APIs:
 - Media
 - Public custom post types where safe
 
-Each object has independent grants:
+Each object has four independent grants:
 
 - Read: list, search, and get records
-- Write: create drafts, update drafts, and publish with explicit approval
+- Create: create drafts and upload media
+- Update: update drafts and publish with explicit approval
 - Delete: move records to trash
 
-Write does not imply Delete.
+Grants are strictly additive — Create does not imply Update, and neither
+implies Delete.
 
 The V1 safe field set is explicit. It includes title, content, excerpt, status,
 slug, featured media, taxonomies, dates, permalink, and safe author display
 name. Private post meta, user emails, auth data, sessions, tokens, secrets, and
 secret-shaped fields are not exposed by default.
+
+### Custom fields
+
+Registered public custom fields (post meta declared with `show_in_rest`) are
+discovered automatically and exposed as writable `meta.<key>` fields, so a job
+can read and update them exactly like built-in fields. Protected keys (a
+leading underscore) and secret-shaped keys are excluded. Register a field with
+WordPress core to make it available:
+
+```php
+register_post_meta('post', 'subtitle', [
+    'type'         => 'string',
+    'single'       => true,
+    'show_in_rest' => true,
+]);
+```
 
 ## REST Endpoints
 
@@ -133,16 +187,21 @@ Read grant:
 - `wordpress.resource.search`
 - `wordpress.resource.get`
 
-Write grant:
+Create grant:
 
 - `wordpress.resource.create`
-- `wordpress.resource.update`
 - `wordpress.resource.draft_write`
+- `wordpress.media.upload`
+
+Update grant:
+
+- `wordpress.resource.update`
 - `wordpress.resource.publish_approved`
 
 Delete grant:
 
 - `wordpress.resource.delete`
+- `wordpress.media.delete`
 
 New content is created as a draft. Updating an existing published post creates
 a draft proposal instead of silently overwriting live content. Publishing
@@ -167,7 +226,6 @@ The plugin creates audit tables on activation and records:
 
 - connect
 - disconnect / revoke
-- key rotation
 - manifest sync
 - grant changes
 - bridge calls
@@ -204,5 +262,6 @@ You can clone the plugin into a local WordPress install and activate it from
   detected only as extension metadata in V1.
 - Full live-content proposal review UI is intentionally minimal. Published
   updates create draft proposals instead of modifying live content directly.
-- Registration and manifest sync URLs are provided by host configuration or
-  filters, not hardcoded in the public package.
+- Authorization-server, control-plane, scope, and resource endpoints are
+  provided by host configuration (constants or the config filter) and default
+  to the TROPIKAL production endpoints; they are not hardcoded per deployment.
