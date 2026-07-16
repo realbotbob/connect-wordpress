@@ -76,7 +76,7 @@ final readonly class WordPressSchemaMapper
         ];
         $payload['readable_fields'] = $object->readableFields();
         $payload['writable_fields'] = $object->writableFields();
-        $payload['risk_level'] = in_array('write', $grants, true) || in_array('delete', $grants, true)
+        $payload['risk_level'] = in_array('create', $grants, true) || in_array('update', $grants, true) || in_array('delete', $grants, true)
             ? 'writes_require_confirmation'
             : 'read';
 
@@ -101,9 +101,12 @@ final readonly class WordPressSchemaMapper
             ], ['type' => 'object']);
         }
 
-        if (in_array('write', $grants, true)) {
-            $writeSchema = $this->writeSchema($object, false);
+        if (in_array('create', $grants, true)) {
             $operations[] = new OperationDescriptor("{$object->key}.create", 'wordpress.resource.create', 'write', $this->writeSchema($object, true), ['type' => 'object'], true);
+        }
+
+        if (in_array('update', $grants, true)) {
+            $writeSchema = $this->writeSchema($object, false);
             $operations[] = new OperationDescriptor("{$object->key}.update", 'wordpress.resource.update', 'write', [
                 ...$writeSchema,
                 'required' => ['id'],

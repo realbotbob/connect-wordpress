@@ -57,7 +57,7 @@ final class BridgeExecutorTest extends TestCase
 
     public function testWriteGrantCreatesDraftButDoesNotAllowUnknownFields(): void
     {
-        $this->grants->set('post', 'write', true);
+        $this->grants->set('post', 'create', true);
 
         $response = $this->executor()->execute(new BridgeRequest('wordpress.resource.create', 'post', [
             'post_title' => 'Draft',
@@ -77,7 +77,7 @@ final class BridgeExecutorTest extends TestCase
 
     public function testWriteGrantDoesNotAllowDelete(): void
     {
-        $this->grants->set('post', 'write', true);
+        $this->grants->set('post', 'create', true);
         $id = wp_insert_post(['post_type' => 'post', 'post_title' => 'Delete me', 'post_status' => 'publish']);
 
         $response = $this->executor()->execute(new BridgeRequest('wordpress.resource.delete', 'post', ['id' => $id]));

@@ -5,7 +5,7 @@
  * Description: Connect approved WordPress business objects to TROPIKAL Connect.
  * Version: 0.1.0
  * Requires PHP: 8.2
- * Author: Tropikal AI
+ * Author: TROPIKAL AI
  * License: MIT
  * Text Domain: tropikal-connect-wordpress
  */

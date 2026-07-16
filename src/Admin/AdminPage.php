@@ -45,6 +45,7 @@ final readonly class AdminPage
 
         $identity = $this->identity->identity();
         $status = $this->connections->publicStatus();
+        $connected = (bool) $status['connected'];
         $grants = $this->grants->all();
         $objects = $this->discovery->discover();
         ?>
@@ -67,13 +68,16 @@ final readonly class AdminPage
                 </tbody>
             </table>
 
-            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin: 16px 0;">
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin: 16px 0; display:inline;">
+                <?php wp_nonce_field('tropikal_connect_connect'); ?>
+                <input type="hidden" name="action" value="tropikal_connect_connect">
+                <button class="button button-primary"><?php echo esc_html($connected ? esc_html__('Reconnect', 'tropikal-connect-wordpress') : esc_html__('Connect to TROPIKAL', 'tropikal-connect-wordpress')); ?></button>
+            </form>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin: 16px 0; display:inline;">
                 <?php wp_nonce_field('tropikal_connect_action'); ?>
                 <input type="hidden" name="action" value="tropikal_connect_action">
-                <button class="button button-primary" name="tropikal_connect_action" value="connect"><?php echo esc_html__('Connect', 'tropikal-connect-wordpress'); ?></button>
-                <button class="button" name="tropikal_connect_action" value="sync"><?php echo esc_html__('Sync Connected Data', 'tropikal-connect-wordpress'); ?></button>
-                <button class="button" name="tropikal_connect_action" value="rotate"><?php echo esc_html__('Rotate Key', 'tropikal-connect-wordpress'); ?></button>
-                <button class="button" name="tropikal_connect_action" value="disconnect"><?php echo esc_html__('Disconnect', 'tropikal-connect-wordpress'); ?></button>
+                <button class="button" name="tropikal_connect_action" value="sync"<?php echo $connected ? '' : ' disabled'; ?>><?php echo esc_html__('Sync Connected Data', 'tropikal-connect-wordpress'); ?></button>
+                <button class="button" name="tropikal_connect_action" value="disconnect"<?php echo $connected ? '' : ' disabled'; ?>><?php echo esc_html__('Disconnect', 'tropikal-connect-wordpress'); ?></button>
             </form>
 
             <h2><?php echo esc_html__('Connected Data', 'tropikal-connect-wordpress'); ?></h2>
@@ -102,7 +106,7 @@ final readonly class AdminPage
                             <td><?php echo esc_html($object->kind); ?></td>
                             <td><?php echo esc_html((string) count($object->readableFields())); ?></td>
                             <td><?php echo esc_html((string) count($object->writableFields())); ?></td>
-                            <?php foreach (['read', 'write', 'delete'] as $grant) : ?>
+                            <?php foreach (['read', 'create', 'update', 'delete'] as $grant) : ?>
                                 <td>
                                     <label>
                                         <input type="checkbox" name="grants[<?php echo esc_attr($object->key); ?>][<?php echo esc_attr($grant); ?>]" value="1" <?php checked(in_array($grant, $resourceGrants, true)); ?>>

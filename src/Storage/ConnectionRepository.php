@@ -35,6 +35,22 @@ final readonly class ConnectionRepository
         return $this->options->string('encrypted_secret');
     }
 
+    public function oauthClientId(): ?string
+    {
+        return $this->options->string('oauth_client_id');
+    }
+
+    public function encryptedRefreshToken(): ?string
+    {
+        return $this->options->string('encrypted_refresh_token');
+    }
+
+    public function saveOAuth(string $clientId, string $encryptedRefreshToken): void
+    {
+        $this->options->set('oauth_client_id', $clientId);
+        $this->options->set('encrypted_refresh_token', $encryptedRefreshToken);
+    }
+
     public function isRevoked(): bool
     {
         return $this->options->bool('revoked');

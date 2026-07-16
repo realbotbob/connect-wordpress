@@ -28,8 +28,13 @@ use Tropikal\Connect\WordPress\Security\NonceStore;
 use Tropikal\Connect\WordPress\Security\PermissionGate;
 use Tropikal\Connect\WordPress\Security\SecretStore;
 use Tropikal\Connect\WordPress\Security\SignatureVerifier;
-use Tropikal\Connect\WordPress\Setup\ControlPlaneClient;
-use Tropikal\Connect\WordPress\Setup\RegistrationService;
+use Tropikal\Connect\WordPress\Admin\ConnectController;
+use Tropikal\Connect\WordPress\Setup\ConnectConfig;
+use Tropikal\Connect\WordPress\Setup\ConnectFlow;
+use Tropikal\Connect\WordPress\Setup\PendingAuthorizationStore;
+use Tropikal\Connect\WordPress\Setup\WpAuthorizationServerGateway;
+use Tropikal\Connect\WordPress\Setup\WpControlPlaneGateway;
+use Tropikal\Connect\WordPress\Setup\WpHttp;
 use Tropikal\Connect\WordPress\Storage\AuditLogRepository;
 use Tropikal\Connect\WordPress\Storage\ConnectionRepository;
 use Tropikal\Connect\WordPress\Storage\GrantRepository;
@@ -77,6 +82,8 @@ final class Plugin
 
         add_action('admin_menu', [$services['admin_page'], 'register']);
         add_action('admin_post_tropikal_connect_action', [$services['admin_actions'], 'handle']);
+        add_action('admin_post_tropikal_connect_connect', [$services['connect'], 'beginConnect']);
+        add_action('admin_post_tropikal_connect_callback', [$services['connect'], 'handleCallback']);
         add_action('admin_notices', [$this->notices, 'render']);
         add_action('rest_api_init', [$services['routes'], 'register']);
         add_action('tropikal_connect_cleanup_nonces', [$this->nonces, 'cleanup']);
@@ -106,12 +113,18 @@ final class Plugin
         $discovery = new BusinessObjectDiscoveryService();
         $schema = new WordPressSchemaMapper($discovery, $this->grants, new ExtensionDetector());
         $secrets = new SecretStore();
-        $registration = new RegistrationService(
-            $identity,
-            $schema,
-            new ControlPlaneClient(),
+        $config = ConnectConfig::fromWordPress();
+        $http = new WpHttp($config->timeoutSeconds);
+        $connectFlow = new ConnectFlow(
+            $config,
+            new PendingAuthorizationStore($this->options, $secrets),
+            new WpAuthorizationServerGateway($config, $http),
+            new WpControlPlaneGateway($config, $http),
             $this->connections,
             $secrets,
+            $this->grants,
+            $schema,
+            $identity,
             $this->audit,
         );
         $reader = new ContentReader();
@@ -146,8 +159,9 @@ final class Plugin
 
         return [
             'admin_page' => new AdminPage($this->gate, $this->notices, $this->connections, $this->grants, $discovery, $identity, $secrets, $this->audit),
-            'admin_actions' => new AdminActionController($this->gate, $this->notices, $this->grants, $discovery, $registration, $this->audit),
+            'admin_actions' => new AdminActionController($this->gate, $this->notices, $this->grants, $discovery, $connectFlow, $this->audit),
             'routes' => $routes,
+            'connect' => new ConnectController($this->gate, $connectFlow, $this->notices),
         ];
     }
 }

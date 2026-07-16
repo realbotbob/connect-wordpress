@@ -98,7 +98,6 @@ final readonly class BusinessObjectDiscoveryService
      */
     private function fieldsFor(string $postType): array
     {
-        unset($postType);
         $fields = [];
         foreach (self::SAFE_FIELDS as $key => [$label, $type, $readable, $writable]) {
             if (SensitiveData::isSensitiveKey($key)) {
@@ -106,6 +105,45 @@ final readonly class BusinessObjectDiscoveryService
             }
 
             $fields[] = new FieldDescriptor($key, (string) $label, (string) $type, (bool) $readable, (bool) $writable);
+        }
+
+        foreach ($this->metaFields($postType) as $field) {
+            $fields[] = $field;
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Registered public custom fields (post meta declared with show_in_rest),
+     * exposed as writable `meta.<key>` fields so a job can update them the same
+     * way as built-in fields. Protected keys (leading underscore) and
+     * secret-shaped keys are excluded.
+     *
+     * @return list<FieldDescriptor>
+     */
+    private function metaFields(string $postType): array
+    {
+        if (! function_exists('get_registered_meta_keys')) {
+            return [];
+        }
+
+        $fields = [];
+        foreach ((array) get_registered_meta_keys('post', $postType) as $metaKey => $args) {
+            if ($metaKey === '' || $metaKey[0] === '_') {
+                continue;
+            }
+            if (! is_array($args) || empty($args['show_in_rest']) || SensitiveData::isSensitiveKey($metaKey)) {
+                continue;
+            }
+
+            $type = match ((string) ($args['type'] ?? 'string')) {
+                'integer', 'number' => 'integer',
+                'boolean' => 'boolean',
+                'object', 'array' => 'object',
+                default => 'string',
+            };
+            $fields[] = new FieldDescriptor('meta.' . $metaKey, ucfirst(str_replace('_', ' ', $metaKey)), $type, true, true);
         }
 
         return $fields;

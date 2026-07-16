@@ -40,7 +40,8 @@ final class DiscoveryTest extends TestCase
     public function testReadWriteDeleteGrantsCreateIndependentOperations(): void
     {
         $grants = new GrantRepository(new OptionsRepository());
-        $grants->set('post', 'write', true);
+        $grants->set('post', 'create', true);
+        $grants->set('post', 'update', true);
 
         $manifest = $this->schema($grants)->manifest((new SiteIdentityProvider())->identity())->toArray();
         $operations = array_column($manifest['resources'][0]['operations'], 'operation');

@@ -1,6 +1,6 @@
 # Security Policy
 
-Report security issues privately to Tropikal before disclosing them publicly.
+Report security issues privately to TROPIKAL before disclosing them publicly.
 
 Do not include passwords, tokens, browser cookies, signing secrets, private keys,
 or production request payloads in reports. Include the plugin version, WordPress

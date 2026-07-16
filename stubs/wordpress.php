@@ -107,3 +107,5 @@ function wp_remote_retrieve_body(array|WP_Error $response): string {}
 function wp_parse_url(string $url, int $component = -1): mixed {}
 function apply_filters(string $hook_name, mixed $value, mixed ...$args): mixed {}
 function dbDelta(string|array $queries = '', bool $execute = true): array {}
+function wp_redirect(string $location, int $status = 302, string $x_redirect_by = 'WordPress'): bool {}
+function get_registered_meta_keys(string $object_type = 'post', string $object_subtype = ''): array {}

@@ -29,7 +29,7 @@ final class ContentReader
     {
         $id = (int) ($post->ID ?? 0);
 
-        return [
+        return $this->withMeta($post, [
             'id' => $id,
             'post_title' => (string) ($post->post_title ?? ''),
             'post_content' => (string) ($post->post_content ?? ''),
@@ -43,7 +43,29 @@ final class ContentReader
             'published_at' => (string) ($post->post_date_gmt ?? ''),
             'permalink' => (string) get_permalink($id),
             'author_name' => (string) get_the_author_meta('display_name', (int) ($post->post_author ?? 0)),
-        ];
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $record
+     * @return array<string, mixed>
+     */
+    private function withMeta(object $post, array $record): array
+    {
+        if (! function_exists('get_registered_meta_keys')) {
+            return $record;
+        }
+
+        $id = (int) ($post->ID ?? 0);
+        $type = (string) ($post->post_type ?? '');
+        foreach ((array) get_registered_meta_keys('post', $type) as $metaKey => $args) {
+            if (! is_string($metaKey) || $metaKey === '' || $metaKey[0] === '_' || ! is_array($args) || empty($args['show_in_rest'])) {
+                continue;
+            }
+            $record['meta.' . $metaKey] = get_post_meta($id, $metaKey, true);
+        }
+
+        return $record;
     }
 
     /**

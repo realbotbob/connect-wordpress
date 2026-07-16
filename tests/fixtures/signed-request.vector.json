@@ -1,0 +1,20 @@
+{
+    "description": "Cross-language HMAC vector. PHP SignedRequest::sign and the ops-side canonical (bridge_sites._verified_connect_filament_site signed_parts) must both reproduce `signature` from these inputs. Canonical = installation_id\\nMETHOD\\npath\\nnormalized_query\\ntimestamp\\nnonce\\nbody_hash, HMAC-SHA256 hex.",
+    "secret": "bfs_test_vector_secret",
+    "installation_id": "cfi_fixture_vector",
+    "method": "POST",
+    "path": "/api/connect-filament/installations/sync-signed",
+    "query": "",
+    "timestamp": 1751600000,
+    "nonce": "00112233445566778899aabbccddeeff",
+    "body": "{\"probe\":true}",
+    "body_hash": "c775500ea34eded73c2a3c3bede193f0d839e6c14b36f21b6cc31472e0720a91",
+    "signature": "42bde0e1874ed6b3ac2b69a31180a3ec78f892fc50d33538f205c243bf09dfb0",
+    "headers": {
+        "installation": "X-Tropikal-Connect-Installation",
+        "timestamp": "X-Tropikal-Connect-Timestamp",
+        "nonce": "X-Tropikal-Connect-Nonce",
+        "body_hash": "X-Tropikal-Connect-Body-SHA256",
+        "signature": "X-Tropikal-Connect-Signature"
+    }
+}

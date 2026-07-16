@@ -32,6 +32,8 @@ final readonly class ContentWriter
             throw new ValidationException((string) $id->get_error_message());
         }
 
+        $this->writeMeta((int) $id, $payload);
+
         return $this->reader->get($object, (int) $id) ?? ['id' => (int) $id];
     }
 
@@ -59,6 +61,8 @@ final readonly class ContentWriter
         if (is_wp_error($updated)) {
             throw new ValidationException((string) $updated->get_error_message());
         }
+
+        $this->writeMeta($id, $payload);
 
         return $this->reader->get($object, $id) ?? ['id' => $id];
     }
@@ -104,5 +108,17 @@ final readonly class ContentWriter
         }
 
         return $map;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function writeMeta(int $id, array $payload): void
+    {
+        foreach ($payload as $key => $value) {
+            if (str_starts_with((string) $key, 'meta.')) {
+                update_post_meta($id, substr($key, 5), $value);
+            }
+        }
     }
 }
