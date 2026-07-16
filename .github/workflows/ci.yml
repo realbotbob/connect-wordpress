@@ -6,11 +6,23 @@ on:
     branches:
       - main
       - "feat/**"
+  workflow_dispatch:
+
+# Never run two CI builds for the same branch/PR at once; a new push
+# supersedes the in-flight run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: CI only reads the checkout.
+permissions:
+  contents: read
 
 jobs:
   quality:
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -29,11 +41,14 @@ jobs:
       - name: Validate composer.json
         run: composer validate --strict
 
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+      - name: Install dependencies (cached)
+        uses: ramsey/composer-install@v3
 
-      - name: Lint (php -l)
-        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: Syntax check (php -l)
+        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 -P4 php -l
+
+      - name: Security audit (composer audit)
+        run: composer audit
 
       - name: Coding standard (PHPCS)
         run: composer lint
@@ -43,3 +58,17 @@ jobs:
 
       - name: Tests (PHPUnit + coverage)
         run: vendor/bin/phpunit --colors=never --coverage-text
+
+  # Single stable check that branch protection requires. It fails if any
+  # matrix job failed or was cancelled, so "CI green" == the whole gate passed.
+  ci:
+    name: CI green
+    if: always()
+    needs: [quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any required job did not succeed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: exit 1
+      - run: echo "All quality jobs passed."
