@@ -38,6 +38,8 @@ final readonly class WpHttp
      */
     private function request(string $url, string $body, array $headers): array
     {
+        $this->assertSecureEndpoint($url);
+
         $response = wp_remote_post($url, [
             'headers' => ['Accept' => 'application/json', ...$headers],
             'body' => $body,
@@ -59,5 +61,21 @@ final readonly class WpHttp
         }
 
         return $decoded;
+    }
+
+    /**
+     * Refuse to send the authorization code, bearer token, or refresh token over
+     * cleartext. https is required; http is tolerated only for loopback hosts so
+     * local development against a mock server still works.
+     */
+    private function assertSecureEndpoint(string $url): void
+    {
+        $scheme = strtolower((string) wp_parse_url($url, PHP_URL_SCHEME));
+        $host = strtolower((string) wp_parse_url($url, PHP_URL_HOST));
+        $isLocal = in_array($host, ['localhost', '127.0.0.1', '::1'], true) || str_ends_with($host, '.localhost');
+
+        if ($scheme !== 'https' && ! ($scheme === 'http' && $isLocal)) {
+            throw new OAuthException('TROPIKAL endpoints must use https (http is allowed only for localhost).');
+        }
     }
 }
