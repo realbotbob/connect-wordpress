@@ -17,20 +17,20 @@ final class WpHttpTest extends TestCase
     public function testRejectsPlainHttpEndpoint(): void
     {
         $this->expectException(OAuthException::class);
-        (new WpHttp)->postForm('http://id.example.test/oauth/token', ['grant_type' => 'authorization_code']);
+        (new WpHttp())->postForm('http://id.example.test/oauth/token', ['grant_type' => 'authorization_code']);
     }
 
     public function testAllowsHttpsEndpoint(): void
     {
         // wp_remote_post is stubbed to return a 200 JSON body; https must pass
         // the scheme guard and reach it.
-        $result = (new WpHttp)->postForm('https://id.example.test/oauth/token', ['grant_type' => 'authorization_code']);
+        $result = (new WpHttp())->postForm('https://id.example.test/oauth/token', ['grant_type' => 'authorization_code']);
         $this->assertIsArray($result);
     }
 
     public function testAllowsHttpOnlyForLoopback(): void
     {
-        $result = (new WpHttp)->postForm('http://127.0.0.1:8899/token', ['grant_type' => 'authorization_code']);
+        $result = (new WpHttp())->postForm('http://127.0.0.1:8899/token', ['grant_type' => 'authorization_code']);
         $this->assertIsArray($result);
     }
 }
